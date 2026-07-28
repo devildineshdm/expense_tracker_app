@@ -1,0 +1,42 @@
+name: expense_tracker
+description: Personal Income & Expense Tracker with Google Drive Backup
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Local database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  path_provider: ^2.1.1
+
+  # State management
+  provider: ^6.1.1
+
+  # Charts for advance reports
+  fl_chart: ^0.66.0
+
+  # Google Sign-In + Drive backup
+  google_sign_in: ^6.2.1
+  googleapis: ^13.1.0
+  googleapis_auth: ^1.6.0
+  http: ^1.1.0
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.2.2
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

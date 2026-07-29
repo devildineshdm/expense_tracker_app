@@ -27,26 +27,13 @@ jobs:
       - name: Android platform files navin banva (android/ folder auto-generate)
         run: flutter create --platforms=android .
 
-      - name: Kotlin version navin karto (compatibility fix)
+      - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |
-          sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
-          cat android/settings.gradle
+          mkdir -p ~/.android
+          cp keystore/debug.keystore ~/.android/debug.keystore
 
       - name: Dependencies install kara
         run: flutter pub get
-
-      - name: Debug keystore navin banva (nasel tar)
-        run: |
-          mkdir -p ~/.android
-          if [ ! -f ~/.android/debug.keystore ]; then
-            keytool -genkeypair -v -keystore ~/.android/debug.keystore \
-              -storepass android -alias androiddebugkey -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
-
-      - name: Debug keystore chi SHA-1 fingerprint dakhva (Google Sign-In setup sathi)
-        run: keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
 
       - name: Release APK build kara
         run: flutter build apk --release

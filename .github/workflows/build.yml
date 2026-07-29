@@ -31,18 +31,6 @@ jobs:
         run: |
           sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
 
-      - name: compileSdk 35 var set karto
-        run: |
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
-
-      - name: ANDROID_HOME dakhva (debug sathi)
-        run: echo "ANDROID_HOME is $ANDROID_HOME"
-
-      - name: Corrupt android-35 platform delete karun tajya download karto (barobar path var)
-        run: |
-          rm -rf "$ANDROID_HOME/platforms/android-35"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-35"
-
       - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |
           mkdir -p ~/.android

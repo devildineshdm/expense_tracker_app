@@ -13,7 +13,10 @@ class DriveService {
   DriveService._internal();
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [drive.DriveApi.driveAppdataScope],
+    scopes: [
+      drive.DriveApi.driveAppdataScope,
+      drive.DriveApi.driveFileScope, // Bill/receipt photos upload karnyasathi
+    ],
   );
 
   GoogleSignInAccount? _currentUser;
@@ -58,9 +61,10 @@ class DriveService {
   }
 
   // Data cha JSON banvun Google Drive च्या appDataFolder madhe upload/update karto
-  Future<void> backupData(List<Map<String, dynamic>> allTransactions) async {
+  // payload madhye {'transactions': [...], 'categories': [...]} asa combined data ahe
+  Future<void> backupData(Map<String, dynamic> payload) async {
     final driveApi = await _getDriveApi();
-    final jsonString = jsonEncode(allTransactions);
+    final jsonString = jsonEncode(payload);
     final bytes = utf8.encode(jsonString);
     final media = drive.Media(
       Stream.value(bytes),
@@ -100,8 +104,8 @@ class DriveService {
   }
 
   // Google Drive varun backup data parat milvnyasathi (restore)
-  // Jar backup nasel tar null परत deto
-  Future<List<Map<String, dynamic>>?> restoreData() async {
+  // Jar backup nasel tar null परत deto. Result: {'transactions': [...], 'categories': [...]}
+  Future<Map<String, dynamic>?> restoreData() async {
     final driveApi = await _getDriveApi();
     final fileId = await _findBackupFileId(driveApi);
     if (fileId == null) return null;
@@ -116,8 +120,16 @@ class DriveService {
       bytes.addAll(chunk);
     }
     final jsonString = utf8.decode(bytes);
-    final List<dynamic> decoded = jsonDecode(jsonString);
-    return decoded.cast<Map<String, dynamic>>();
+    final decoded = jsonDecode(jsonString);
+
+    // Junya backup format sathi backward-compatibility (fakt list hoti tar)
+    if (decoded is List) {
+      return {
+        'transactions': decoded.cast<Map<String, dynamic>>(),
+        'categories': <Map<String, dynamic>>[],
+      };
+    }
+    return Map<String, dynamic>.from(decoded);
   }
 
   // Shevatcha backup kadhi zala te check karnyasathi (Drive file cha modifiedTime)
@@ -130,6 +142,53 @@ class DriveService {
       $fields: 'modifiedTime',
     ) as drive.File;
     return file.modifiedTime;
+  }
+
+  // ---------- RECEIPT / BILL PHOTO UPLOAD ----------
+  // He photos "appDataFolder" madhe nahi, tar normal (app-created, visible)
+  // files mhanun jातात, jyala user "expense_tracker_receipts" folder madhe
+  // Drive var baghu shakto (jar directly Drive ughadli tar).
+  String? _receiptsFolderId;
+
+  Future<String> _getOrCreateReceiptsFolder(drive.DriveApi driveApi) async {
+    if (_receiptsFolderId != null) return _receiptsFolderId!;
+    final list = await driveApi.files.list(
+      q: "name = 'ExpenseTracker_Receipts' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      spaces: 'drive',
+    );
+    if (list.files != null && list.files!.isNotEmpty) {
+      _receiptsFolderId = list.files!.first.id;
+      return _receiptsFolderId!;
+    }
+    final folder = drive.File()
+      ..name = 'ExpenseTracker_Receipts'
+      ..mimeType = 'application/vnd.google-apps.folder';
+    final created = await driveApi.files.create(folder);
+    _receiptsFolderId = created.id;
+    return _receiptsFolderId!;
+  }
+
+  // Receipt cha photo Drive var upload karto, tyachi Drive file id parat deto
+  Future<String> uploadReceiptImage(List<int> bytes, String fileName) async {
+    final driveApi = await _getDriveApi();
+    final folderId = await _getOrCreateReceiptsFolder(driveApi);
+    final media = drive.Media(Stream.value(bytes), bytes.length,
+        contentType: 'image/jpeg');
+    final fileMetadata = drive.File()
+      ..name = fileName
+      ..parents = [folderId];
+    final created =
+        await driveApi.files.create(fileMetadata, uploadMedia: media);
+    return created.id!;
+  }
+
+  Future<void> deleteReceiptImage(String fileId) async {
+    try {
+      final driveApi = await _getDriveApi();
+      await driveApi.files.delete(fileId);
+    } catch (e) {
+      // fail zala tar ignore karto, receipt aadhich delete zali असेल
+    }
   }
 }
 

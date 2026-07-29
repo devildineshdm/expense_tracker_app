@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../utils/app_state.dart';
+import '../utils/app_language.dart';
+import '../utils/export_service.dart';
 import '../widgets/transaction_tile.dart';
 import 'add_edit_screen.dart';
 import 'reports_screen.dart';
+import 'categories_screen.dart';
+import 'pin_screens.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,10 +16,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final lang = Provider.of<AppLanguage>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('माझा हिशोब'),
+        title: Text(lang.t('app_title')),
         actions: [
           Consumer<AppState>(
             builder: (context, appState, _) {
@@ -42,11 +47,48 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.bar_chart),
-            tooltip: 'Reports',
+            tooltip: lang.t('reports'),
             onPressed: () {
               Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const ReportsScreen()));
             },
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) => _handleMenu(context, value),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'categories',
+                child: Row(children: [
+                  const Icon(Icons.category, size: 20),
+                  const SizedBox(width: 10),
+                  Text(lang.t('manage_categories')),
+                ]),
+              ),
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(children: [
+                  Icon(Icons.file_download, size: 20),
+                  SizedBox(width: 10),
+                  Text('Excel मध्ये Export करा'),
+                ]),
+              ),
+              const PopupMenuItem(
+                value: 'pin',
+                child: Row(children: [
+                  Icon(Icons.lock_outline, size: 20),
+                  SizedBox(width: 10),
+                  Text('App PIN Lock सेट करा'),
+                ]),
+              ),
+              PopupMenuItem(
+                value: 'language',
+                child: Row(children: [
+                  const Icon(Icons.language, size: 20),
+                  const SizedBox(width: 10),
+                  Text('${lang.t('language')}: ${lang.code == 'mr' ? 'मराठी' : 'English'}'),
+                ]),
+              ),
+            ],
           ),
         ],
       ),
@@ -57,15 +99,16 @@ class HomeScreen extends StatelessWidget {
           }
           return Column(
             children: [
-              _buildSummaryCard(context, appState, currencyFormat),
+              _buildSummaryCard(context, appState, currencyFormat, lang),
               const SizedBox(height: 8),
               Expanded(
                 child: appState.transactions.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'अजून कुठलीही नोंद नाही.\n+ बटण दाबून पहिली entry टाका.',
+                          lang.t('no_entries'),
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 15, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 15, color: Colors.grey),
                         ),
                       )
                     : ListView.builder(
@@ -87,13 +130,43 @@ class HomeScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const AddEditScreen()));
         },
         icon: const Icon(Icons.add),
-        label: const Text('नोंद करा'),
+        label: Text(lang.t('add_entry')),
       ),
     );
   }
 
-  Widget _buildSummaryCard(
-      BuildContext context, AppState appState, NumberFormat fmt) {
+  void _handleMenu(BuildContext context, String value) async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final lang = Provider.of<AppLanguage>(context, listen: false);
+
+    switch (value) {
+      case 'categories':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const CategoriesScreen()));
+        break;
+      case 'export':
+        if (appState.transactions.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Export करण्यासाठी आधी entries टाका.')));
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Excel file तयार होतोय...')));
+        await ExportService.exportToExcel(appState.transactions);
+        break;
+      case 'pin':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const SetPinScreen()));
+        break;
+      case 'language':
+        final newCode = lang.code == 'mr' ? 'en' : 'mr';
+        lang.setLanguage(newCode);
+        break;
+    }
+  }
+
+  Widget _buildSummaryCard(BuildContext context, AppState appState,
+      NumberFormat fmt, AppLanguage lang) {
     return Card(
       margin: const EdgeInsets.all(12),
       elevation: 3,
@@ -102,7 +175,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'सध्याची शिल्लक (Balance)',
+              lang.t('balance'),
               style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
             const SizedBox(height: 4),
@@ -118,9 +191,11 @@ class HomeScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _summaryItem('Income', appState.totalIncome, Colors.green, fmt),
+                _summaryItem(
+                    lang.t('income'), appState.totalIncome, Colors.green, fmt),
                 Container(width: 1, height: 40, color: Colors.grey.shade300),
-                _summaryItem('Expense', appState.totalExpense, Colors.red, fmt),
+                _summaryItem(
+                    lang.t('expense'), appState.totalExpense, Colors.red, fmt),
               ],
             ),
           ],
@@ -167,13 +242,14 @@ class HomeScreen extends StatelessWidget {
         ),
       );
     } else {
-      final success = await appState.signInWithGoogle();
+      final error = await appState.signInWithGoogle();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
+            content: Text(error == null
                 ? 'Google Drive shी jodla gela! Data automatically backup hoil.'
-                : 'Sign-in fail jhala, parat try kara.'),
+                : 'Sign-in fail: $error'),
+            duration: const Duration(seconds: 5),
           ),
         );
       }

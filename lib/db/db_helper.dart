@@ -1,6 +1,8 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/transaction_model.dart';
+import '../models/category_model.dart';
+import '../utils/icon_options.dart';
 
 // Ha class local phone storage (SQLite) sathi ahe
 // App band jhala tari data ithe safe rahto
@@ -23,7 +25,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE transactions (
@@ -33,11 +35,90 @@ class DBHelper {
             category TEXT NOT NULL,
             note TEXT,
             date TEXT NOT NULL,
-            paymentMode TEXT
+            paymentMode TEXT,
+            receiptLocalPath TEXT,
+            receiptDriveId TEXT
           )
         ''');
+        await _createCategoriesTable(db);
+        await _seedDefaultCategories(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createCategoriesTable(db);
+          await _seedDefaultCategories(db);
+        }
+        if (oldVersion < 3) {
+          await db.execute(
+              'ALTER TABLE transactions ADD COLUMN receiptLocalPath TEXT');
+          await db.execute(
+              'ALTER TABLE transactions ADD COLUMN receiptDriveId TEXT');
+        }
       },
     );
+  }
+
+  Future<void> _createCategoriesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        iconCodePoint INTEGER NOT NULL,
+        colorValue INTEGER NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _seedDefaultCategories(Database db) async {
+    final defaults = DefaultCategories.seed();
+    for (final c in defaults) {
+      await db.insert('categories', c.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+  }
+
+  // ---------- CATEGORY METHODS ----------
+
+  Future<List<CategoryModel>> getCategories(String type) async {
+    final db = await database;
+    final maps =
+        await db.query('categories', where: 'type = ?', whereArgs: [type]);
+    return maps.map((m) => CategoryModel.fromMap(m)).toList();
+  }
+
+  Future<void> insertCategory(CategoryModel cat) async {
+    final db = await database;
+    await db.insert('categories', cat.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateCategory(CategoryModel cat) async {
+    final db = await database;
+    await db.update('categories', cat.toMap(),
+        where: 'id = ?', whereArgs: [cat.id]);
+  }
+
+  Future<void> deleteCategory(String id) async {
+    final db = await database;
+    await db.delete('categories', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Google Drive backup madhye categories pan samaviष्ट karnyasathi
+  Future<List<Map<String, dynamic>>> exportCategoriesAsJson() async {
+    final db = await database;
+    return await db.query('categories');
+  }
+
+  Future<void> replaceAllCategories(List<Map<String, dynamic>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('categories');
+      for (final row in rows) {
+        await txn.insert('categories', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
   }
 
   // Navin entry add karnyasathi

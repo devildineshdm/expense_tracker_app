@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction_model.dart';
 import '../utils/app_state.dart';
+import '../utils/app_language.dart';
 
 class AddEditScreen extends StatefulWidget {
   final TransactionModel? existingTransaction;
@@ -20,6 +24,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
   String? _category;
   String _paymentMode = 'Cash';
   DateTime _date = DateTime.now();
+  String? _receiptPath; // Bill/receipt cha local photo path (optional)
+  String? _receiptDriveId;
 
   bool get isEditing => widget.existingTransaction != null;
 
@@ -34,37 +40,86 @@ class _AddEditScreenState extends State<AddEditScreen> {
       _category = t.category;
       _paymentMode = t.paymentMode;
       _date = t.date;
+      _receiptPath = t.receiptLocalPath;
+      _receiptDriveId = t.receiptDriveId;
     }
+  }
+
+  Future<void> _pickReceiptPhoto() async {
+    final picker = ImagePicker();
+    final choice = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('फोटो काढा (Camera)'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery मधून निवडा'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null) return;
+
+    final picked = await picker.pickImage(source: choice, imageQuality: 70);
+    if (picked == null) return;
+
+    // Photo la app cha permanent folder madhe copy karto
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName =
+        'receipt_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final savedFile =
+        await File(picked.path).copy('${appDir.path}/$fileName');
+
+    setState(() {
+      _receiptPath = savedFile.path;
+      _receiptDriveId = null; // navin photo, Drive var punha upload hoil
+    });
+  }
+
+  void _removeReceiptPhoto() {
+    setState(() {
+      _receiptPath = null;
+      _receiptDriveId = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final categories =
-        _type == 'income' ? Categories.income : Categories.expense;
-    if (_category != null && !categories.contains(_category)) {
+    final lang = Provider.of<AppLanguage>(context);
+    final appState = Provider.of<AppState>(context);
+    final categories = appState.categoriesFor(_type);
+
+    if (_category != null && !categories.any((c) => c.name == _category)) {
       _category = null;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'नोंद edit करा' : 'नवीन नोंद'),
+        title: Text(isEditing ? lang.t('edit_entry') : lang.t('new_entry')),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Income / Expense toggle
             SegmentedButton<String>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                     value: 'expense',
-                    label: Text('Expense'),
-                    icon: Icon(Icons.arrow_upward)),
+                    label: Text(lang.t('expense')),
+                    icon: const Icon(Icons.arrow_upward)),
                 ButtonSegment(
                     value: 'income',
-                    label: Text('Income'),
-                    icon: Icon(Icons.arrow_downward)),
+                    label: Text(lang.t('income')),
+                    icon: const Icon(Icons.arrow_downward)),
               ],
               selected: {_type},
               onSelectionChanged: (val) {
@@ -80,10 +135,10 @@ class _AddEditScreenState extends State<AddEditScreen> {
               controller: _amountController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'रक्कम (Amount)',
+              decoration: InputDecoration(
+                labelText: lang.t('amount'),
                 prefixText: '₹ ',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) return 'रक्कम टाका';
@@ -94,27 +149,62 @@ class _AddEditScreenState extends State<AddEditScreen> {
             ),
             const SizedBox(height: 16),
 
-            DropdownButtonFormField<String>(
-              value: _category,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                border: OutlineInputBorder(),
-              ),
-              items: categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: (val) => setState(() => _category = val),
-              validator: (val) => val == null ? 'Category निवडा' : null,
+            Text(lang.t('category'),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: categories.map((cat) {
+                final selected = cat.name == _category;
+                return GestureDetector(
+                  onTap: () => setState(() => _category = cat.name),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: selected
+                            ? cat.color
+                            : cat.color.withOpacity(0.35),
+                        child: Icon(cat.icon,
+                            color: Colors.white,
+                            size: selected ? 24 : 20),
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 64,
+                        child: Text(
+                          cat.name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
-            const SizedBox(height: 16),
+            if (_category == null)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text('Category निवडा',
+                    style: TextStyle(color: Colors.red, fontSize: 12)),
+              ),
+            const SizedBox(height: 20),
 
             DropdownButtonFormField<String>(
               value: _paymentMode,
-              decoration: const InputDecoration(
-                labelText: 'Payment Mode',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: lang.t('payment_mode'),
+                border: const OutlineInputBorder(),
               ),
-              items: Categories.paymentModes
+              items: ['Cash', 'Bank Transfer', 'UPI', 'Card']
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
               onChanged: (val) => setState(() => _paymentMode = val!),
@@ -123,9 +213,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
-              subtitle: Text(
-                  '${_date.day}/${_date.month}/${_date.year}'),
+              title: Text(lang.t('date')),
+              subtitle: Text('${_date.day}/${_date.month}/${_date.year}'),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
                 final picked = await showDatePicker(
@@ -142,17 +231,56 @@ class _AddEditScreenState extends State<AddEditScreen> {
             TextFormField(
               controller: _noteController,
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Note (optional)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: lang.t('note'),
+                border: const OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 20),
+
+            Text('Bill / Receipt फोटो (optional)',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            if (_receiptPath != null)
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      File(_receiptPath!),
+                      height: 160,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.black54,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.close,
+                            color: Colors.white, size: 18),
+                        onPressed: _removeReceiptPhoto,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: _pickReceiptPhoto,
+                icon: const Icon(Icons.add_a_photo),
+                label: const Text('Bill चा फोटो जोडा'),
+              ),
             const SizedBox(height: 24),
 
             FilledButton.icon(
               onPressed: _save,
               icon: const Icon(Icons.check),
-              label: Text(isEditing ? 'Update करा' : 'Save करा'),
+              label: Text(isEditing ? lang.t('update') : lang.t('save')),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
@@ -165,6 +293,12 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    if (_category == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('कृपया Category निवडा')),
+      );
+      return;
+    }
 
     final appState = Provider.of<AppState>(context, listen: false);
     final txn = TransactionModel(
@@ -175,6 +309,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
       note: _noteController.text.trim(),
       date: _date,
       paymentMode: _paymentMode,
+      receiptLocalPath: _receiptPath,
+      receiptDriveId: _receiptDriveId,
     );
 
     if (isEditing) {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/app_state.dart';
+import '../utils/app_language.dart';
 import 'home_screen.dart';
+import 'pin_screens.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,8 +21,28 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _startApp() async {
     final appState = Provider.of<AppState>(context, listen: false);
+    final lang = Provider.of<AppLanguage>(context, listen: false);
+
+    await lang.init();
     await appState.init();
-    if (mounted) {
+
+    final pinSet = await PinStorage.isPinSet();
+
+    if (!mounted) return;
+
+    if (pinSet) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => EnterPinScreen(
+            onSuccess: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );

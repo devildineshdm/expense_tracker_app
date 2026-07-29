@@ -14,6 +14,9 @@ class TransactionTile extends StatelessWidget {
     final isIncome = transaction.type == 'income';
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final dateFmt = DateFormat('dd MMM yyyy');
+    final appState = Provider.of<AppState>(context, listen: false);
+    final categoryInfo =
+        appState.findCategory(transaction.type, transaction.category);
 
     return Dismissible(
       key: Key(transaction.id),
@@ -54,11 +57,12 @@ class TransactionTile extends StatelessWidget {
           );
         },
         leading: CircleAvatar(
-          backgroundColor:
-              isIncome ? Colors.green.shade100 : Colors.red.shade100,
+          backgroundColor: categoryInfo?.color ??
+              (isIncome ? Colors.green.shade100 : Colors.red.shade100),
           child: Icon(
-            isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-            color: isIncome ? Colors.green.shade700 : Colors.red.shade700,
+            categoryInfo?.icon ??
+                (isIncome ? Icons.arrow_downward : Icons.arrow_upward),
+            color: Colors.white,
           ),
         ),
         title: Text(transaction.category,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'utils/app_state.dart';
+import 'utils/app_language.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -12,8 +13,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppState(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider(create: (_) => AppLanguage()),
+      ],
       child: MaterialApp(
         title: 'Expense Tracker',
         debugShowCheckedModeBanner: false,

@@ -7,6 +7,8 @@ class TransactionModel {
   final String note;
   final DateTime date;
   final String paymentMode; // Cash, Bank, UPI, Card
+  final String? receiptLocalPath; // Phone var save zalela bill/receipt photo
+  final String? receiptDriveId; // Google Drive var upload zalela file id (optional)
 
   TransactionModel({
     required this.id,
@@ -16,6 +18,8 @@ class TransactionModel {
     required this.note,
     required this.date,
     required this.paymentMode,
+    this.receiptLocalPath,
+    this.receiptDriveId,
   });
 
   Map<String, dynamic> toMap() {
@@ -27,6 +31,8 @@ class TransactionModel {
       'note': note,
       'date': date.toIso8601String(),
       'paymentMode': paymentMode,
+      'receiptLocalPath': receiptLocalPath,
+      'receiptDriveId': receiptDriveId,
     };
   }
 
@@ -39,6 +45,25 @@ class TransactionModel {
       note: map['note'] ?? '',
       date: DateTime.parse(map['date']),
       paymentMode: map['paymentMode'] ?? 'Cash',
+      receiptLocalPath: map['receiptLocalPath'],
+      receiptDriveId: map['receiptDriveId'],
+    );
+  }
+
+  TransactionModel copyWith({
+    String? receiptLocalPath,
+    String? receiptDriveId,
+  }) {
+    return TransactionModel(
+      id: id,
+      type: type,
+      amount: amount,
+      category: category,
+      note: note,
+      date: date,
+      paymentMode: paymentMode,
+      receiptLocalPath: receiptLocalPath ?? this.receiptLocalPath,
+      receiptDriveId: receiptDriveId ?? this.receiptDriveId,
     );
   }
 }

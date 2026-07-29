@@ -18,6 +18,13 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Taji Android SDK install karto (corrupt cache tALto)
+        uses: android-actions/setup-android@v3
+
+      - name: SDK 35 platform + build-tools install karto
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;34.0.0" "platform-tools"
+
       - name: Flutter SDK setup kara
         uses: subosito/flutter-action@v2
         with:
@@ -29,12 +36,33 @@ jobs:
 
       - name: Kotlin version navin karto (compatibility fix)
         run: |
-          sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
+          sed -i -E 's/(id "org.jetbrains.kotlin.android" version )"[^"]+"/\1"1.9.22"/' android/settings.gradle
+          cat android/settings.gradle
+
+      - name: Sagle Kotlin stdlib versions ek sarkhya force kartho (dependency clash fix)
+        run: |
+          cat >> android/build.gradle << 'EOF'
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.9.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22'
+                  }
+              }
+          }
+          EOF
+
+      - name: compileSdk 35 var set karto
+        run: |
+          sed -i -E 's/compileSdk[ ]*=.*/compileSdk = 35/' android/app/build.gradle
+          cat android/app/build.gradle
 
       - name: App cha display name "My Wallet" set karto
         run: |
           sed -i 's/android:label="[^"]*"/android:label="My Wallet"/' android/app/src/main/AndroidManifest.xml
-          cat android/app/src/main/AndroidManifest.xml
 
       - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |

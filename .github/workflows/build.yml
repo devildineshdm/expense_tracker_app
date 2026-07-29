@@ -18,6 +18,13 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Taji Android SDK install karto (corrupt cache tALto)
+        uses: android-actions/setup-android@v3
+
+      - name: SDK 35 platform + build-tools install karto
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;34.0.0" "platform-tools"
+
       - name: Flutter SDK setup kara
         uses: subosito/flutter-action@v2
         with:
@@ -34,12 +41,6 @@ jobs:
       - name: compileSdk 35 var set karto
         run: |
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
-          cat android/app/build.gradle
-
-      - name: Corrupt zalela Android SDK 35 platform parat download karto
-        run: |
-          rm -rf $ANDROID_HOME/platforms/android-35
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
 
       - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |

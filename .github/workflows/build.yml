@@ -31,6 +31,11 @@ jobs:
         run: |
           sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
 
+      - name: App cha display name "My Wallet" set karto
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="My Wallet"/' android/app/src/main/AndroidManifest.xml
+          cat android/app/src/main/AndroidManifest.xml
+
       - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |
           mkdir -p ~/.android
@@ -38,6 +43,9 @@ jobs:
 
       - name: Dependencies install kara
         run: flutter pub get
+
+      - name: Navin App Icon generate karto
+        run: dart run flutter_launcher_icons
 
       - name: Release APK build kara
         run: flutter build apk --release --no-tree-shake-icons

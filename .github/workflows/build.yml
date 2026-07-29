@@ -30,7 +30,16 @@ jobs:
       - name: Kotlin version navin karto (compatibility fix)
         run: |
           sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
-          cat android/settings.gradle
+
+      - name: compileSdk 35 var set karto
+        run: |
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
+          cat android/app/build.gradle
+
+      - name: Corrupt zalela Android SDK 35 platform parat download karto
+        run: |
+          rm -rf $ANDROID_HOME/platforms/android-35
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
 
       - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |

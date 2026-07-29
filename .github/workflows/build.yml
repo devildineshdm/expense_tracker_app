@@ -27,6 +27,11 @@ jobs:
       - name: Android platform files navin banva (android/ folder auto-generate)
         run: flutter create --platforms=android .
 
+      - name: Kotlin version navin karto (compatibility fix)
+        run: |
+          sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
+          cat android/settings.gradle
+
       - name: Fixed debug keystore vaparto (SHA-1 kayamchi rahnyasathi)
         run: |
           mkdir -p ~/.android

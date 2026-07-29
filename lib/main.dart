@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppLanguage()),
       ],
       child: MaterialApp(
-        title: 'Expense Tracker',
+        title: 'My Wallet',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,

@@ -27,8 +27,9 @@ class AppState extends ChangeNotifier {
   // Transaction cha category name varun tyachi icon/color shodhnyasathi
   CategoryModel? findCategory(String type, String name) {
     final list = categoriesFor(type);
+    final target = name.trim().toLowerCase();
     for (final c in list) {
-      if (c.name == name) return c;
+      if (c.name.trim().toLowerCase() == target) return c;
     }
     return null;
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'home_screen.dart';
 
 // PIN la plain text sathvण्याऐवजी tyacha hash sathvto (thodी jast safety)
 String _hashPin(String pin) => sha256.convert(utf8.encode(pin)).toString();
@@ -203,8 +204,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
 
 // ---------- ENTER PIN SCREEN (App uघडल्यावर lock साठी) ----------
 class EnterPinScreen extends StatefulWidget {
-  final VoidCallback onSuccess;
-  const EnterPinScreen({super.key, required this.onSuccess});
+  const EnterPinScreen({super.key});
 
   @override
   State<EnterPinScreen> createState() => _EnterPinScreenState();
@@ -227,8 +227,13 @@ class _EnterPinScreenState extends State<EnterPinScreen> {
 
   Future<void> _verify() async {
     final valid = await PinStorage.verifyPin(_entered);
+    if (!mounted) return;
     if (valid) {
-      widget.onSuccess();
+      // Ithe swataha cha (EnterPinScreen cha) context vaparto, splash screen
+      // cha junaa (disposed) context nahi - tyamule navigation nakki hoto
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
     } else {
       setState(() {
         _error = 'चुकीचा PIN, परत प्रयत्न करा';

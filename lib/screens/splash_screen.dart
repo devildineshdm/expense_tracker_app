@@ -32,15 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (pinSet) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => EnterPinScreen(
-            onSuccess: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-              );
-            },
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => const EnterPinScreen()),
       );
     } else {
       Navigator.of(context).pushReplacement(
@@ -60,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 size: 80, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 20),
             const Text(
-              'Expense Tracker',
+              'My Wallet',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),

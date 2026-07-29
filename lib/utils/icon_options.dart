@@ -32,6 +32,24 @@ class IconOptions {
     Icons.sports_esports,    // Games
     Icons.fitness_center,    // Gym
     Icons.flight,            // Travel/Flight
+    Icons.local_pharmacy,    // Pharmacy
+    Icons.child_care,        // Baby/Kids
+    Icons.book,              // Books
+    Icons.tv,                // Subscriptions/TV
+    Icons.coffee,            // Coffee/Cafe
+    Icons.local_laundry_service, // Laundry
+    Icons.build,             // Repairs/Maintenance
+    Icons.credit_card,       // Card payments
+    Icons.spa,               // Salon/Spa
+    Icons.beach_access,      // Vacation
+    Icons.pedal_bike,        // Cycle/Bike
+    Icons.electric_bolt,     // Electricity
+    Icons.water_drop,        // Water bill
+    Icons.local_florist,     // Gardening/Flowers
+    Icons.cake,              // Celebration/Cake
+    Icons.smoking_rooms,     // Habits
+    Icons.currency_rupee,    // Generic money
+    Icons.receipt_long,      // Bills
     Icons.category,          // Other
   ];
 
@@ -46,6 +64,13 @@ class IconOptions {
     Icons.two_wheeler,       // Delivery/Swiggy type
     Icons.account_balance_wallet, // Loan received
     Icons.attach_money,      // Other Income
+    Icons.savings,           // Savings/Interest
+    Icons.real_estate_agent, // Rent received
+    Icons.currency_rupee,    // Generic money
+    Icons.redeem,            // Rewards/Cashback
+    Icons.handshake,         // Deal/Partnership
+    Icons.emoji_events,      // Bonus/Prize
+    Icons.family_restroom,   // Family support
   ];
 
   static const List<Color> colorPalette = [

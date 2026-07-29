@@ -18,13 +18,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Taji Android SDK install karto (corrupt cache tALto)
-        uses: android-actions/setup-android@v3
-
-      - name: SDK 35 platform + build-tools install karto
-        run: |
-          sdkmanager --install "platforms;android-35" "build-tools;34.0.0" "platform-tools"
-
       - name: Flutter SDK setup kara
         uses: subosito/flutter-action@v2
         with:
@@ -37,7 +30,6 @@ jobs:
       - name: Kotlin version navin karto (compatibility fix)
         run: |
           sed -i -E 's/(id "org.jetbrains.kotlin.android" version )"[^"]+"/\1"1.9.22"/' android/settings.gradle
-          cat android/settings.gradle
 
       - name: Sagle Kotlin stdlib versions ek sarkhya force kartho (dependency clash fix)
         run: |
@@ -54,11 +46,6 @@ jobs:
               }
           }
           EOF
-
-      - name: compileSdk 35 var set karto
-        run: |
-          sed -i -E 's/compileSdk[ ]*=.*/compileSdk = 35/' android/app/build.gradle
-          cat android/app/build.gradle
 
       - name: App cha display name "My Wallet" set karto
         run: |
